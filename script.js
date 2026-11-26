@@ -277,7 +277,7 @@ function sayLine(p,intent,n){const s=SAY[p.id]||{};const r=REG[p.reg]||REG.polit
 function freshCase(c){return{known:[],chat:{boss:c.brief.map(t=>({f:'npc',t}))},tries:0,status:'open',grade:'',fresh:[],last:{},miss:{}}}
 function isAvail(c,cs,id){const f=c.facts[id];if(!f)return false;if(cs.known.includes(id))return true;if(f.only)return false;return (f.req||[]).every(r=>cs.known.includes(r))}
 function score(f,q){let s=0;for(const k of f.keys){if(k.split('+').every(p=>q.includes(norm(p))))s++}return s}
-function matchFacts(c,cs,who,text){const q=expand(text);const out=[];for(const id in c.facts){const f=c.facts[id];if(f.who!==who||!isAvail(c,cs,id))continue;const s=score(f,q);if(s>0)out.push({id,s:s+(cs.known.includes(id)?0:10)})}out.sort((a,b)=>b.s-a.s);return out.slice(0,2).map(o=>o.id)}
+function matchFacts(c,cs,who,text){const q=expand(text);const out=[];for(const id in c.facts){const f=c.facts[id];if(f.who!==who||!isAvail(c,cs,id))continue;const s=score(f,q);if(s>0)out.push({id,s:s+(cs.known.includes(id)?0:10)})}out.sort((a,b)=>b.s-a.s);const nw=out.filter(o=>!cs.known.includes(o.id));return (nw.length?nw.slice(0,2):out.slice(0,1)).map(o=>o.id)}
 function allowedFor(c,cs,who){return Object.keys(c.facts).filter(id=>c.facts[id].who===who&&isAvail(c,cs,id))}
 function presentRule(c,cs,who,ev){const p=c.presents.find(p=>p.who===who&&p.ev.includes(ev)&&p.req.every(r=>cs.known.includes(r)));return p&&p.unlock.some(u=>!cs.known.includes(u))?p:(p||null)}
 function addKnown(cs,ids){const added=[];for(const id of ids){if(!cs.known.includes(id)){cs.known.push(id);added.push(id)}}return added}
