@@ -13,7 +13,7 @@
       victim: "han",
       brief: [
         "첫 건은 가볍게 가지. 17층 탕비실 커피 사건이야.",
-        "위에서 관계자를 고르고 아래 질문 카드를 누르면 그 단어에 대해 물어볼 수 있어. 대화 속 밑줄 친 단어도 눌러서 바로 물을 수 있고, 직접 입력해도 돼.",
+        "위에서 관계자를 고르고 채팅으로 직접 물어봐. 사람 이름, 장소, 물건, 시각을 넣어서 물으면 잘 알아들어. 정 막막하면 아래 [질문 카드 보기]를 켜도 되고.",
         "들은 내용은 수첩에 쌓여. 서로 안 맞는 카드 두 장을 찾으면 [모순 지적]으로 짚어 내. 그다음 그 카드를 당사자한테 제시해.",
         '마지막엔 빈칸을 채워 결재 문장을 완성하면 돼. 막히면 나한테 "힌트"라고 보내.',
       ],
@@ -113,7 +113,7 @@
           who: "han",
           title: "텀블러 생김새",
           text: "하늘색이고, 이름 스티커는 바닥에 붙어 있어서 위에서 보면 누구 건지 몰라요.",
-          keys: ["색", "생김", "스티커", "이름", "하늘색", "표시"],
+          keys: ["색", "생김", "생겼", "어떻게생", "스티커", "이름", "하늘색", "표시", "모양"],
         },
         c1_fight: {
           who: "han",
@@ -2033,6 +2033,7 @@ ${task}`;
         W("cctv", "복도 카메라", ["카메라"]),
         W("sticker", "이름 스티커", ["스티커"]),
         W("promo", "파트장 후보", ["파트장"]),
+        W("insomnia", "불면증", ["잠을 못"]),
       ],
       start: ["tangbi", "tumbler", "drug", "present"],
       on: {
@@ -2061,6 +2062,8 @@ ${task}`;
           p_han: "한 대리님이요? 늘 하늘색 텀블러 들고 다니세요.",
         },
         baek: {
+          shelf1: "네? 아, 그냥… 텀블러가 거기 있었던 것 같아서요. 제가 착각했나 보네요.",
+          insomnia: "잠이요? 하하, 요즘 다들 피곤하잖아요.",
           drug: "수면유도제요? 무서운 일이네요. 누가 그런 걸…",
           p_jung: "정 대리가 발표를 엄청 하고 싶어 했죠. 아, 의심하는 건 아니고요.",
           p_lee: "총무팀 신입이요? 잘 모르는데요.",
@@ -2077,6 +2080,7 @@ ${task}`;
           tangbi: "탕비실은 17층 엘리베이터 옆이에요. 카드를 찍어야 들어가요.",
         },
         kim: {
+          t1325: "13시 25분 이나래 씨 이후로는 카드 기록이 하나도 없습니다.",
           tumbler: "텀블러는 보안팀 소관이 아닙니다.",
           drug: "약물 관련 기록은 없습니다.",
           door: "문이 열려 있으면 카드 기록이 남지 않습니다.",
@@ -2086,7 +2090,7 @@ ${task}`;
         {
           f: "c1_tum",
           n: "피해자부터 만나 봐. 커피를 어디 뒀는지가 출발점이야.",
-          d: "한소윤 탭에서 아래 [하늘색 텀블러] 카드를 눌러 물어봐.",
+          d: "한소윤한테 [하늘색 텀블러]를 어디 뒀는지 물어봐.",
         },
         {
           f: "c1_log",
@@ -2383,6 +2387,10 @@ ${task}`;
       ],
     },
     c5: {
+      talk: {
+        yoon: { insurance: "보험이요? 그건 제 사적인 일입니다." },
+        sora: { guest: "나, 남자분이요? 저는 잘…" },
+      },
       alias: { ma: ["사장"], sora: ["소라"], do: ["도현우 씨"], jin: ["작가"], yoon: ["윤 선생"] },
       words: [
         W("vase", "고려청자 연적", ["연적"]),
@@ -2530,14 +2538,6 @@ ${task}`;
       .replace("{w}", lab)
       .replace("{yo}", yo(lab.replace(/["”]/g, "")));
   }
-  function detectWord(c, text) {
-    let best = null;
-    String(text).replace(c.hlRe, (m) => {
-      if (!best || m.length > best.length) best = m;
-      return m;
-    });
-    return best ? c.hlMap.get(best) : null;
-  }
   function conflictOf(c, cs, x, y) {
     return c.conflicts.findIndex(
       (k, i) =>
@@ -2570,6 +2570,117 @@ ${task}`;
     return { ok: !wrong.length && ev, wrong, ev };
   }
 
+  const ALIAS = {
+    c1: {
+      tangbi: ["휴게실", "주방", "커피실", "팬트리"],
+      tumbler: ["보온병", "물병", "컵", "머그", "텀블"],
+      drug: ["수면제", "약물", "졸음", "약을", "약이", "약은", "약 "],
+      present: ["프레젠테이션", "피티", "임원보고"],
+      door: ["문을", "문은", "문이", "문 ", "고임", "열어둔", "열려"],
+      cardigan: ["가디건", "니트", "옷", "겉옷", "차림"],
+      log: ["기록", "출입", "로그", "카드키", "찍"],
+      parking: ["주차", "출차", "외근", "차는", "차를"],
+      cctv: ["cctv", "씨씨티비", "영상", "카메라", "녹화"],
+      promo: ["승진", "후보", "파트장"],
+      insomnia: ["불면", "잠", "수면"],
+      sticker: ["스티커", "이름표"],
+      shelf1: ["선반"],
+    },
+    c2: {
+      locker: ["택배함", "보관함", "사물함", "락커", "칸"],
+      code: ["비번", "암호", "번호", "패스워드"],
+      lens: ["카메라", "물건", "택배", "상자"],
+      outage: ["와이파이", "wifi", "인터넷", "공지", "점검"],
+      used: ["중고", "당근", "판매", "거래", "팔"],
+      meeting: ["회의", "줌", "재택"],
+      academy: ["학원", "출결"],
+      moved: ["이사", "전에살", "예전에살", "살던"],
+      patrol: ["순찰", "자리비"],
+      u1203: ["1203"],
+      u1204: ["1204", "옆집"],
+      photo: ["사진", "증거"],
+    },
+    c3: {
+      note: ["노트", "필기"],
+      slipnote: ["쪽지", "협박", "메모"],
+      blackout: ["정전", "불꺼", "어두", "불이"],
+      breaker: ["차단기", "분전함", "두꺼비집", "전기"],
+      timer: ["타이머", "공부앱", "공부시간", "앱"],
+      printer: ["프린터", "인쇄", "출력", "프린트", "뽑"],
+      seat17: ["17번", "좌석"],
+      store: ["편의점", "영수증"],
+      lounge: ["휴게실", "전화"],
+      cctv3: ["cctv", "카메라", "영상"],
+      keyboard: ["키보드", "소음", "시끄"],
+    },
+    c4: {
+      deleted: ["삭제", "지워", "지운", "메시지", "글은", "글이", "글을"],
+      cat: ["회색고양이", "익명", "프로필"],
+      catname: ["고양이", "반려"],
+      post: ["공모전", "캡처", "캡쳐", "스크린샷", "조작"],
+      count: ["숫자", "읽음", "안읽", "읽은"],
+      openchat: ["오픈채팅", "링크", "닉네임"],
+      workphone: ["업무폰", "폰", "휴대폰", "핸드폰", "계정"],
+      vote: ["발표자", "투표", "발표"],
+      pcroom: ["pc방", "게임", "디스코드"],
+      alba: ["알바", "편의점"],
+    },
+    c5: {
+      vase: ["연적", "청자", "골동품", "도자기"],
+      safe: ["금고"],
+      snow: ["눈", "발자국", "눈길"],
+      ledger: ["장부", "숙박부", "명부", "수정테이프", "인원"],
+      annex: ["별채"],
+      cars: ["차가", "차는", "차를", "주차", "자동차", "몇대"],
+      timelapse: ["타임랩스", "촬영", "찍"],
+      insurance: ["보험"],
+      pills: ["수면제"],
+      guest: ["동행", "일행", "같이온", "같이왔", "남자", "조카", "혼자"],
+      bag: ["가방"],
+      cctv5: ["cctv", "카메라", "영상"],
+    },
+  };
+  for (const c of CASES) {
+    const pairs = [];
+    const add = (s, id) => {
+      const k = norm(s);
+      if (k) pairs.push([k, id]);
+    };
+    c.words.forEach((w) => w.hl.forEach((s) => add(s, w.id)));
+    const a = ALIAS[c.id] || {};
+    for (const id in a) a[id].forEach((s) => add(s, id));
+    pairs.sort((x, y) => y[0].length - x[0].length);
+    c.inPairs = pairs;
+  }
+  function timeWords(c, text) {
+    const out = [];
+    const re = /(오전|오후|새벽|밤|저녁)?\s*(\d{1,2})\s*(?:시|:)\s*(반|\d{1,2})?/g;
+    let m;
+    while ((m = re.exec(String(text)))) {
+      const hh = +m[2],
+        mm = m[3] === "반" ? 30 : +m[3] || 0;
+      const hs =
+        m[1] === "오후" || m[1] === "저녁" || m[1] === "밤"
+          ? [hh < 12 ? hh + 12 : hh]
+          : m[1] === "오전" || m[1] === "새벽"
+            ? [hh]
+            : [hh, hh + 12];
+      for (const H of hs) {
+        const lab = String(H % 24).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+        const w = c.words.find((x) => x.label === lab || x.label.startsWith(lab));
+        if (w) out.push(w.id);
+      }
+    }
+    return out;
+  }
+  function detectWord(c, text) {
+    const tw = timeWords(c, text);
+    if (tw.length) return tw[0];
+    let q = norm(text);
+    for (const n of NOISE) q = q.split(n).join("");
+    const hit = c.inPairs.find((p) => q.includes(p[0]));
+    return hit ? hit[1] : null;
+  }
   /*ENGINE END*/
 
   const $ = (s) => document.querySelector(s);
@@ -2582,17 +2693,17 @@ ${task}`;
   const DIFF = {
     easy: {
       name: "편하게",
-      desc: "반장이 처음부터 구체적으로 알려 줍니다. 결재에서 틀린 칸을 짚어 주고, 기회 제한이 없습니다.",
+      desc: "질문 카드가 켜진 채로 시작하고, 반장이 처음부터 구체적으로 알려 줍니다. 결재에서 틀린 칸을 짚어 주고, 기회 제한이 없습니다.",
       tries: 99,
     },
     normal: {
       name: "보통",
-      desc: "힌트는 먼저 방향만, 한 번 더 물으면 구체적으로. 막히면 반장이 먼저 연락합니다. 결재 기회 3번.",
+      desc: "채팅으로 직접 질문합니다. 힌트는 먼저 방향만, 한 번 더 물으면 구체적으로. 막히면 반장이 먼저 연락합니다. 결재 기회 3번.",
       tries: 3,
     },
     hard: {
       name: "도전",
-      desc: "힌트는 방향만 줍니다. 반장이 먼저 연락하지 않습니다. 결재 기회 2번.",
+      desc: "채팅으로 직접 질문합니다. 힌트는 방향만, 반장이 먼저 연락하지 않습니다. 결재 기회 2번.",
       tries: 2,
     },
   };
@@ -2625,6 +2736,7 @@ ${task}`;
   const D = () => DIFF[S.diff || "normal"];
   function hlHTML(c, t) {
     t = String(t);
+    if (!S.cards) return esc(t);
     let out = "",
       last = 0;
     t.replace(c.hlRe, (m, off) => {
@@ -2709,6 +2821,11 @@ ${task}`;
     const c = C(),
       cs = CS(),
       w = S.who[S.cur];
+    if (w !== "boss" && !S.cards) {
+      $("#tray").innerHTML =
+        `<span class="tl">인물·장소·물건·시각을 넣어 직접 질문해 보세요.</span><button class="wc t-b" id="cardsBtn">질문 카드 보기</button>`;
+      return;
+    }
     if (w === "boss") {
       $("#tray").innerHTML = ["힌트 주세요", "지금까지 정리해 주세요"]
         .map((x) => `<button class="wc t-b" data-chip="${x}">${x}</button>`)
@@ -2724,7 +2841,7 @@ ${task}`;
       ...c.people.filter((p) => p.id !== w).map((p) => wordOf(c, "p_" + p.id)),
     ];
     $("#tray").innerHTML =
-      `<span class="tl">질문 카드</span>` +
+      `<span class="tl">질문 카드</span><button class="wc t-b" id="cardsBtn">접기</button>` +
       items
         .map(
           (x) =>
@@ -2742,7 +2859,7 @@ ${task}`;
     const oc = openConflicts(c, cs);
     const tools =
       cs.known.length >= 2 && cs.status === "open"
-        ? `<div class="ntools"><button class="cfb${pickSel ? " on" : ""}" id="cfBtn">${pickSel ? "지적 취소" : "모순 지적"}</button><span>${S.diff !== "hard" && oc ? `숨은 모순 ${oc}개` : ""}</span></div>`
+        ? `<div class="ntools"><button class="cfb${pickSel ? " on" : ""}" id="cfBtn">${pickSel ? "지적 취소" : "모순 지적"}</button><span>${S.diff === "easy" && oc ? `숨은 모순 ${oc}개` : ""}</span></div>`
         : "";
     const cards = cs.known
       .slice()
@@ -2831,7 +2948,7 @@ ${task}`;
         }
       });
     });
-    if (cs.newW.length)
+    if (cs.newW.length && S.cards)
       push({ f: "sys", t: "새 질문 카드: " + cs.newW.map((id) => wordOf(c, id).label).join(", ") });
     return added;
   }
@@ -2887,7 +3004,7 @@ ${task}`;
         const n = cs.known.length;
         r = n
           ? `지금 카드 ${n}장, 찾은 모순 ${(cs.found || []).length}개.` +
-            (S.diff !== "hard" ? ` 아직 숨은 모순 ${openConflicts(c, cs)}개.` : "") +
+            (S.diff === "easy" ? ` 아직 숨은 모순 ${openConflicts(c, cs)}개.` : "") +
             ' 막히면 "힌트"라고 해.'
           : "아직 들은 게 없잖아. 관계자부터 만나.";
       } else {
@@ -3012,7 +3129,9 @@ ${task}`;
         cs.miss[p.id] = 0;
         push({
           f: "sys",
-          t: "잘 알아듣지 못했어요 · 아래 질문 카드를 누르거나, 밑줄 친 단어를 눌러 보세요",
+          t: S.cards
+            ? "잘 알아듣지 못했어요 · 아래 질문 카드를 누르거나, 밑줄 친 단어를 눌러 보세요"
+            : "잘 알아듣지 못했어요 · 사람 이름, 장소, 물건, 시각을 넣어 물어보세요",
         });
         $("#tray").classList.add("flash");
         setTimeout(() => $("#tray").classList.remove("flash"), 2400);
@@ -3197,10 +3316,17 @@ ${task}`;
   }
   document.addEventListener("click", (e) => {
     const t = e.target.closest(
-      "[data-case],[data-who],[data-chip],[data-ask],[data-w],[data-present],[data-pick],[data-diff],[data-close],[data-reset],#rGo,#cfBtn,#cfGo",
+      "#cardsBtn,[data-case],[data-who],[data-chip],[data-ask],[data-w],[data-present],[data-pick],[data-diff],[data-close],[data-reset],#rGo,#cfBtn,#cfGo",
     );
     if (!t) return;
-    if (t.dataset.case) selectCase(t.dataset.case);
+    if (t.id === "cardsBtn") {
+      S.cards = !S.cards;
+      renderLog();
+      renderTray();
+      renderNote();
+      renderHead();
+      save();
+    } else if (t.dataset.case) selectCase(t.dataset.case);
     else if (t.dataset.who) {
       S.who[S.cur] = t.dataset.who;
       if (t.dataset.who === "boss") CS().bossNew = false;
@@ -3225,7 +3351,9 @@ ${task}`;
       }
     } else if (t.dataset.pick) pickCard(t.dataset.pick);
     else if (t.dataset.diff) {
+      const first = !S.diff;
       S.diff = t.dataset.diff;
+      if (first) S.cards = S.diff === "easy";
       closeDlg();
       renderAll();
     } else if (t.id === "cfBtn") togglePick();
@@ -3306,6 +3434,7 @@ ${task}`;
     document.title = on ? "업무 메모 - 11월 4주차" : realTitle;
   }
   $("#hideBtn").addEventListener("click", toggleMemo);
+  $("#memoClose").addEventListener("click", toggleMemo);
   let lastEsc = 0;
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape") return;
